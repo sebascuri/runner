@@ -1,5 +1,5 @@
-from .util import make_commands, is_leonhard
-from .runners import AbstractRunner, LeonhardRunner, SingleRunner
+from .util import make_commands, is_ibm
+from .runners import AbstractRunner, IBMRunner, SingleRunner
 
 
 def init_runner(name, num_threads=1, use_gpu=False, wall_time=None, memory=None):
@@ -23,7 +23,7 @@ def init_runner(name, num_threads=1, use_gpu=False, wall_time=None, memory=None)
     runner: AbstractRunner
 
     """
-    if is_leonhard():
-        return LeonhardRunner(name, num_threads, use_gpu, wall_time, memory)
+    if is_ibm():
+        return IBMRunner(name, num_threads, use_gpu, wall_time, memory)
     else:
         return SingleRunner(name, num_threads, use_gpu)

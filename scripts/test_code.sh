@@ -36,5 +36,5 @@ echo -e "${GREEN}Running mypy tests.${NC}"
 mypy $module || { exit 1; }
 
 # Run unit tests
-#echo -e "${GREEN}Running unit tests.${NC}"
-#pytest $module || { exit 1; }
+echo -e "${GREEN}Running unit tests.${NC}"
+pytest tests || { exit 1; }

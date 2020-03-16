@@ -75,8 +75,8 @@ class AbstractRunner(ABC):
         return cmd
 
 
-class LeonhardRunner(AbstractRunner):
-    """Runner in Leonhard Cluster."""
+class IBMRunner(AbstractRunner):
+    """Runner in IBM Cluster."""
 
     def run(self, cmd_list: List[str]) -> None:
         """See `AbstractRunner.run'."""
@@ -128,7 +128,6 @@ class LeonhardRunner(AbstractRunner):
 
         bsub_cmd += '-n {} '.format(self.num_threads)
 
-        # bsub -J "jobname[1-20]"
         bsub_cmd += '-J "{}[1-{}]"'.format(self.name, batch_size)
 
         bsub_cmd += ' "awk -v jindex=\\$LSB_JOBINDEX \'NR==jindex\' {} | bash"'.format(

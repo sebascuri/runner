@@ -1,17 +1,14 @@
 """Utilities for runners project."""
-import socket
 import multiprocessing
 import os
 import sys
 import torch
 import itertools
-
 import numpy as np
 from typing import Callable, Optional, Tuple, List, Dict, Any
 
 __author__ = 'Sebastian Curi'
-__all__ = ['make_commands', 'is_leonhard', 'start_process', 'get_free_gpu',
-           'get_gpu_count']
+__all__ = ['make_commands', 'is_ibm', 'start_process', 'get_free_gpu', 'get_gpu_count']
 
 
 def make_commands(script: str, base_args: Dict[str, Any],
@@ -73,10 +70,9 @@ def make_commands(script: str, base_args: Dict[str, Any],
     return commands
 
 
-def is_leonhard() -> bool:
-    """Check if host is Leonhard."""
-    hostname = socket.gethostname()
-    return 'lo-' in hostname
+def is_ibm() -> bool:
+    """Check if host is IBM."""
+    return 'LSF_ENVDIR' in os.environ
 
 
 def start_process(target: Callable, args: Optional[Tuple] = None
