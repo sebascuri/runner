@@ -65,7 +65,10 @@ def make_commands(script: str, base_args: Dict[str, Any],
         cmd = base_cmd
         for dict_ in [base_args, fixed_hyper_args, hyper_args]:
             for key, value in dict_.items():
-                cmd += " --%s %s" % (str(key), str(value))
+                if type(value) is bool:
+                    cmd += " --{}".format(key)  # for store_true arguments.
+                else:
+                    cmd += " --{} {}".format(key, value)
         commands.append(cmd)
 
     return commands
