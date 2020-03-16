@@ -7,9 +7,7 @@ setup(
     author_email="sebascuri@gmail.com",
     license="MIT",
     packages=find_packages(exclude=['docs']),
-    install_requires=['torch>=1.0.0,<2.0.0',
-                      'numpy>=1.0,<2',
-                      ],
+    install_requires=[],
     extras_require={
         'test': [
             'pytest>=5.0,<5.1',

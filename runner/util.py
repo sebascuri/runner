@@ -2,17 +2,15 @@
 import multiprocessing
 import os
 import sys
-import torch
 import itertools
-import numpy as np
 from typing import Callable, Optional, Tuple, List, Dict, Any
 
 __author__ = 'Sebastian Curi'
-__all__ = ['make_commands', 'is_ibm', 'start_process', 'get_free_gpu', 'get_gpu_count']
+__all__ = ['make_commands', 'is_ibm', 'start_process']
 
 
 def make_commands(script: str, base_args: Dict[str, Any],
-                  fixed_hyper_args: Dict[str, Any],
+                  fixed_hyper_args: Dict[str, Any] = None,
                   common_hyper_args: Dict[str, List[Any]] = None,
                   algorithm_hyper_args: Dict[str, List[Any]] = None
                   ) -> List[str]:
@@ -50,6 +48,9 @@ def make_commands(script: str, base_args: Dict[str, Any],
     base_cmd = interpreter_script + ' ' + script
     commands = []  # List[str]
 
+    if fixed_hyper_args is None:
+        fixed_hyper_args = dict()
+
     if common_hyper_args is None:
         common_hyper_args = dict()
 
@@ -64,7 +65,7 @@ def make_commands(script: str, base_args: Dict[str, Any],
         cmd = base_cmd
         for dict_ in [base_args, fixed_hyper_args, hyper_args]:
             for key, value in dict_.items():
-                cmd += " --%s=%s" % (str(key), str(value))
+                cmd += " --%s %s" % (str(key), str(value))
         commands.append(cmd)
 
     return commands
@@ -95,29 +96,3 @@ def start_process(target: Callable, args: Optional[Tuple] = None
         p = multiprocessing.Process(target=target)
     p.start()
     return p
-
-
-def get_free_gpu() -> int:
-    """Get the GPU with largest free memory.
-
-    Returns
-    -------
-    gpu: int
-
-    """
-    os.system('nvidia-smi -q -d Memory |grep -A4 GPU|grep Free >tmp_gpu')
-    memory_available = [int(x.split()[2])
-                        for x in open('tmp_gpu', 'r').readlines()]
-    os.system('rm tmp_gpu')
-    return np.argmax(memory_available)
-
-
-def get_gpu_count() -> int:
-    """Get number of GPUs.
-
-    Returns
-    -------
-    number of gpu: int
-
-    """
-    return torch.cuda.device_count()
