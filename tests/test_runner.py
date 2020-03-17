@@ -9,13 +9,14 @@ def test_make_commands():
     script = 'tests/script.py'
 
     cmds = make_commands(
-        script, base_args={'threads': 2}, fixed_hyper_args={'lr': 0.1, 'print': True},
+        script, base_args={'threads': 2},
+        fixed_hyper_args={'lr': 0.1, 'print': True, 'layers': [64, 128]},
         common_hyper_args={'seed': [0, 1, 2]},
         algorithm_hyper_args={'wd': [0.01, 0.1]}
     )
 
     assert cmds == [
-        '{} {} --threads 2 --lr 0.1 --print --seed {} --wd {}'.format(
+        '{} {} --threads 2 --lr 0.1 --print --layers 64 128 --seed {} --wd {}'.format(
             sys.executable, script, seed, wd) for seed, wd in itertools.product(
             [0, 1, 2], [0.01, 0.1])]
 
