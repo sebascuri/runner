@@ -65,9 +65,10 @@ def make_commands(script: str, base_args: Dict[str, Any],
         cmd = base_cmd
         for dict_ in [base_args, fixed_hyper_args, hyper_args]:
             for key, value in dict_.items():
-                if type(value) is bool:
-                    cmd += " --{}".format(key)  # for store_true arguments.
-                elif type(value) is list:
+                if isinstance(value, bool):
+                    if value:
+                        cmd += " --{}".format(key)  # for store_true arguments.
+                elif isinstance(value, list):
                     assert len(value) > 0, "Non-empty lists are not allowed."
                     cmd += " --{}".format(key) + (' {}' * len(value)).format(*value)
                 else:

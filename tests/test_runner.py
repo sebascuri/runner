@@ -1,5 +1,5 @@
-from runner import init_runner, make_commands
-from runner.runners import IBMRunner
+from lsf_runner import init_runner, make_commands
+from lsf_runner.runners import IBMRunner
 import pytest
 import sys
 import itertools
