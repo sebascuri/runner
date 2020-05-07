@@ -1,12 +1,27 @@
 from setuptools import setup, find_packages
 
+with open("README.md", "r") as fh:
+    long_description = fh.read()
+    
 setup(
-    name="runner",
+    name="runner-sebascuri",
     version="0.0.1",
     author="Sebastian Curi",
     author_email="sebascuri@gmail.com",
+    description="A package to run experiments on lsf or linux clusters.",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    url="https://github.com/sebascuri/runner",
     license="MIT",
     packages=find_packages(exclude=['docs']),
+    classifiers=[
+        "Intended Audience :: Developers",
+        "Topic :: Software Development :: Build Tools",
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
+    ],
+    python_requires='>=3.6',
     install_requires=[],
     extras_require={
         'test': [
@@ -17,19 +32,4 @@ setup(
             'mypy>=0.740',
         ],
     },
-    classifiers=[
-        # How mature is this project? Common values are
-        #   3 - Alpha
-        #   4 - Beta
-        #   5 - Production/Stable
-        'Development Status :: 3 - Alpha',
-
-        # Indicate who your project is intended for
-        'Intended Audience :: Developers',
-        'Topic :: Software Development :: Build Tools',
-        'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7'
-    ],
 )
