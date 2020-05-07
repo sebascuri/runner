@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
     
 setup(
-    name="runner-sebascuri",
+    name="lsf-runner",
     version="0.0.1",
     author="Sebastian Curi",
     author_email="sebascuri@gmail.com",
