@@ -39,7 +39,7 @@ class AbstractRunner(ABC):
         self.name = name
 
     @abstractmethod
-    def run(self, cmd_list: List[str]) -> None:
+    def run(self, cmd_list: List[str]) -> List[str]:
         """Run commands in list.
 
         Parameters
@@ -50,7 +50,7 @@ class AbstractRunner(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def run_batch(self, cmd_list: List[str]) -> None:
+    def run_batch(self, cmd_list: List[str]) -> str:
         """Run commands in list in batch mode.
 
         Parameters
@@ -71,55 +71,61 @@ class IBMRunner(AbstractRunner):
                 os.makedirs('logs/')
             except FileExistsError:
                 pass
-            bsub_cmd += '-o logs/lsf.{} '.format(self.name)
+            bsub_cmd += f'-o logs/lsf.{self.name} '
 
         if self.wall_time is not None:  # Add wall time.
-            bsub_cmd += '-W {} '.format(self.wall_time)
+            bsub_cmd += f'-W {self.wall_time} '
 
         if self.memory is not None:  # Add memory request.
-            bsub_cmd += '-R "rusage[mem={}]" '.format(self.memory)
+            bsub_cmd += f'-R "rusage[mem={self.memory}]" '
 
         if self.use_gpu:  # Add GPU request.
             bsub_cmd += '-R "rusage[ngpus_excl_p=1]" '
 
-        bsub_cmd += '-n {} '.format(self.num_threads)  # Add number threads.
+        bsub_cmd += f'-n {self.num_threads} '  # Add number threads.
 
         return bsub_cmd
 
-    def run(self, cmd_list: List[str]) -> None:
+    def run(self, cmd_list: List[str]) -> List[str]:
         """See `AbstractRunner.run'."""
         tasks = cmd_list[:]
 
+        cmds = []
         bsub_cmd = self._build_base_cmd()
         for i, cmd in enumerate(tasks):
             bsub_cmd_i = bsub_cmd
             if self.name is not None:
-                bsub_cmd_i += '-J "{}-{}"'.format(self.name, i)
-            os.system(bsub_cmd_i + '"{}"'.format(cmd))
+                bsub_cmd_i += f'-J "{self.name}-{i}" '
 
-    def run_batch(self, cmd_list: List[str]) -> None:
+            cmds.append(bsub_cmd_i + f'"{cmd}"')
+            os.system(cmds[-1])
+
+        return cmds
+
+    def run_batch(self, cmd_list: List[str]) -> str:
         """Run jobs in batch mode."""
+        bsub_cmd = self._build_base_cmd()
+
         if self.name is not None:
-            cmd_file = 'logs/{}_cmd'.format(self.name)
+            cmd_file = f'logs/{self.name}_cmd'
         else:
             cmd_file = 'cmd_file'
         with open(cmd_file, 'w') as f:
             for cmd in cmd_list:
                 f.write(cmd + '\n')
 
-        bsub_cmd = self._build_base_cmd()
         if self.name is not None:
-            bsub_cmd += '-J "{}[1-{}]"'.format(self.name, len(cmd_list))
+            bsub_cmd += f'-J "{self.name}[1-{len(cmd_list)}]"'
 
-        bsub_cmd += ' "awk -v jindex=\\$LSB_JOBINDEX \'NR==jindex\' {} | bash"'.format(
-            cmd_file)
+        bsub_cmd += f' "awk -v jindex=\\$LSB_JOBINDEX \'NR==jindex\' {cmd_file} | bash"'
         os.system(bsub_cmd)
+        return bsub_cmd
 
 
 class SingleRunner(AbstractRunner):
     """Runner in a Single Machine."""
 
-    def run(self, cmd_list: List[str]) -> None:
+    def run(self, cmd_list: List[str]) -> List[str]:
         """See `AbstractRunner.run'."""
         workers_idle = [False] * self.num_workers
         pool = [start_process(lambda: None) for _ in range(self.num_workers)]
@@ -135,6 +141,8 @@ class SingleRunner(AbstractRunner):
                     else:
                         workers_idle[i] = True
 
-    def run_batch(self, cmd_list: List[str]) -> None:
+        return cmd_list
+
+    def run_batch(self, cmd_list: List[str]) -> str:
         """Run batch."""
-        self.run(cmd_list)
+        return ''.join(self.run(cmd_list))
