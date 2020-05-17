@@ -31,7 +31,7 @@ class AbstractRunner(ABC):
 
     def __init__(self, name: str = None, num_threads: int = 1, use_gpu: bool = False,
                  wall_time: int = None, memory: int = None) -> None:
-        self.num_workers = multiprocessing.cpu_count() // num_threads
+        self.num_workers = max(1, multiprocessing.cpu_count() // num_threads - 1)
         self.num_threads = num_threads
         self.use_gpu = use_gpu
         self.wall_time = wall_time

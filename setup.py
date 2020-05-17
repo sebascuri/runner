@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
     
 setup(
     name="lsf-runner",
-    version="0.0.3",
+    version="0.0.4",
     author="Sebastian Curi",
     author_email="sebascuri@gmail.com",
     description="A package to run experiments on lsf or linux clusters.",
