@@ -2,6 +2,7 @@
 
 import multiprocessing
 import os
+import time
 from abc import ABC, abstractmethod
 from typing import List, Optional
 from .util import start_process
@@ -136,6 +137,7 @@ class SingleRunner(AbstractRunner):
                 if not pool[i].is_alive():
                     pool[i].terminate()
                     if len(tasks) > 0:
+                        time.sleep(1) 
                         cmd = tasks.pop(0)
                         pool[i] = start_process(lambda x: os.system(x), (cmd,))
                     else:
