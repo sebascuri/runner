@@ -31,21 +31,6 @@ def num_threads(request):
     return request.param
 
 
-@pytest.fixture(params=[True, False])
-def use_gpu(request):
-    return request.param
-
-
-@pytest.fixture(params=[None, 720])
-def wall_time(request):
-    return request.param
-
-
-@pytest.fixture(params=[None, 4096])
-def memory(request):
-    return request.param
-
-
 def test_make_commands():
     script = 'tests/script.py'
 
@@ -80,20 +65,76 @@ def test_init_run_batch(cmds):
     runner.run_batch(cmds)
 
 
-def test_lsf_params(num_threads, use_gpu, wall_time, memory):
-    runner = IBMRunner(num_threads=num_threads, use_gpu=use_gpu, wall_time=wall_time,
-                       memory=memory)
+class TestLSF(object):
+    @pytest.fixture(params=[True, False], scope='class')
+    def use_gpu(self, request):
+        return request.param
 
-    base_cmd = runner._build_base_cmd()
+    @pytest.fixture(params=[None, 720], scope='class')
+    def wall_time(self, request):
+        return request.param
 
-    cmd = "bsub "
-    if wall_time:
-        cmd += '-W {} '.format(wall_time)
-    if memory:
-        cmd += '-R "rusage[mem={}]" '.format(memory)
-    if use_gpu:
-        cmd += '-R "rusage[ngpus_excl_p=1]" '
+    @pytest.fixture(params=[None, 4096], scope='class')
+    def memory(self, request):
+        return request.param
 
-    cmd += '-n {} '.format(num_threads)
+    def test_lsf_params(self, num_threads, use_gpu, wall_time, memory):
+        runner = IBMRunner('test', num_threads=num_threads, use_gpu=use_gpu,
+                           wall_time=wall_time, memory=memory)
 
-    assert cmd == base_cmd
+        base_cmd = runner._build_base_cmd()
+
+        cmd = "bsub -o logs/lsf.test "
+        if wall_time:
+            cmd += '-W {} '.format(wall_time)
+        if memory:
+            cmd += '-R "rusage[mem={}]" '.format(memory)
+        if use_gpu:
+            cmd += '-R "rusage[ngpus_excl_p=1]" '
+
+        cmd += '-n {} '.format(num_threads)
+
+        assert cmd == base_cmd
+        self.delete_logs()
+
+    def test_lsf_run(self, cmds):
+        runner = IBMRunner('test')
+        runner.run(cmds)
+        self.delete_logs()
+
+    def test_lsf_run_batch(self, cmds):
+        runner = IBMRunner('test')
+        runner.run_batch(cmds)
+        self.delete_logs()
+
+    @staticmethod
+    def delete_logs():
+        try:
+            shutil.rmtree('logs')
+        except FileNotFoundError:
+            pass
+
+
+class TestSingle(object):
+    @pytest.fixture(params=[1, 2, 4], scope='class')
+    def num_threads(self, request):
+        return request.param
+
+    def test_warning(self, num_threads):
+        with pytest.warns(UserWarning):
+            runner = SingleRunner('test', num_threads=num_threads, num_workers=4)
+
+        assert runner.num_workers == max(1, 4 // num_threads - 1)
+
+    def test_default_num_workers(self, num_threads):
+        runner = SingleRunner('test', num_threads=num_threads)
+
+        assert runner.num_workers == max(1, 4 // num_threads - 1)
+
+    def test_single_run(self, cmds):
+        runner = SingleRunner('test')
+        runner.run(cmds)
+
+    def test_single_run_batch(self, cmds):
+        runner = SingleRunner('test')
+        runner.run_batch(cmds)

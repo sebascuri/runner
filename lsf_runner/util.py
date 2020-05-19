@@ -49,10 +49,10 @@ def make_commands(script: str, base_args: Dict[str, Any],
     commands = []  # List[str]
 
     if fixed_hyper_args is None:
-        fixed_hyper_args = dict()
+        fixed_hyper_args = dict()  # pragma: no cover
 
     if common_hyper_args is None:
-        common_hyper_args = dict()
+        common_hyper_args = dict()  # pragma: no cover
 
     common_hyper_args = common_hyper_args.copy()
     if algorithm_hyper_args is not None:

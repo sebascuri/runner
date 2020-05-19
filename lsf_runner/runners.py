@@ -3,8 +3,12 @@
 import multiprocessing
 import os
 import time
+from datetime import datetime
+
 from abc import ABC, abstractmethod
 from typing import List, Optional
+import warnings
+
 from .util import start_process
 
 
@@ -13,31 +17,18 @@ class AbstractRunner(ABC):
 
     Parameters
     ----------
-    num_threads: int, optional
+    name: str.
+        Runner name.
+    num_threads: int, optional. (default=1)/.
         Number of threads to use.
-    use_gpu: bool, optional
-        Flag to indicate GPU usage.
-    wall_time: int, optional
-        Required time, in minutes, to run the process.
-    memory: int, optional
-        Required memory, in MB, to run run the process.
     """
 
-    num_workers: int
+    name: str
     num_threads: int
-    use_gpu: bool
-    wall_time: Optional[int]
-    memory: Optional[int]
-    name: Optional[str]
 
-    def __init__(self, name: str = None, num_threads: int = 1, use_gpu: bool = False,
-                 wall_time: int = None, memory: int = None) -> None:
-        self.num_workers = max(1, multiprocessing.cpu_count() // num_threads - 1)
-        self.num_threads = num_threads
-        self.use_gpu = use_gpu
-        self.wall_time = wall_time
-        self.memory = memory
+    def __init__(self, name: str, num_threads: int = 1):
         self.name = name
+        self.num_threads = num_threads
 
     @abstractmethod
     def run(self, cmd_list: List[str]) -> List[str]:
@@ -63,15 +54,43 @@ class AbstractRunner(ABC):
 
 
 class IBMRunner(AbstractRunner):
-    """Runner in IBM Cluster."""
+    """Runner in IBM Cluster.
+
+    The runner submits to the bsub queueing system.
+
+    Parameters
+    ----------
+    name: str.
+        Runner name.
+    num_threads: int, optional. (default=1)/.
+        Number of threads to use.
+    use_gpu: bool, optional. (default: No GPU request).
+        Flag to indicate GPU usage.
+    wall_time: int, optional. (default: No extra time request).
+        Required time, in minutes, to run the process.
+    memory: int, optional. (default: No extra memory request).
+        Required memory, in MB, to run run the process.
+
+    """
+
+    use_gpu: bool
+    wall_time: Optional[int]
+    memory: Optional[int]
+
+    def __init__(self, name: str, num_threads: int = 1, use_gpu: bool = False,
+                 wall_time: int = None, memory: int = None) -> None:
+        super().__init__(name, num_threads=num_threads)
+        self.use_gpu = use_gpu
+        self.wall_time = wall_time
+        self.memory = memory
 
     def _build_base_cmd(self) -> str:
         bsub_cmd = 'bsub '
+        try:
+            os.makedirs('logs/')
+        except FileExistsError:
+            pass
         if self.name is not None:  # Add LSF log dir.
-            try:
-                os.makedirs('logs/')
-            except FileExistsError:
-                pass
             bsub_cmd += f'-o logs/lsf.{self.name} '
 
         if self.wall_time is not None:  # Add wall time.
@@ -104,13 +123,12 @@ class IBMRunner(AbstractRunner):
         return cmds
 
     def run_batch(self, cmd_list: List[str]) -> str:
-        """Run jobs in batch mode."""
+        """See `AbstractRunner.run_batch'."""
         bsub_cmd = self._build_base_cmd()
 
-        if self.name is not None:
-            cmd_file = f'logs/{self.name}_cmd'
-        else:
-            cmd_file = 'cmd_file'
+        current_time = datetime.now().strftime('%b%d_%H-%M-%S')
+        cmd_file = f'logs/{self.name}_cmd_{current_time}'
+
         with open(cmd_file, 'w') as f:
             for cmd in cmd_list:
                 f.write(cmd + '\n')
@@ -124,7 +142,33 @@ class IBMRunner(AbstractRunner):
 
 
 class SingleRunner(AbstractRunner):
-    """Runner in a Single Machine."""
+    """Runner in a Single Machine.
+
+    The runner submits the jobs in parallel to the `num_workers'. While the workers are
+    working, it keeps on checking and spawns a new job every time a worker is freed up.
+
+    Parameters
+    ----------
+    name: str.
+        Runner name.
+    num_threads: int, optional. (default=1)/.
+        Number of threads to use.
+    num_workers: int, optional. (default = cpu_count() // num_threads - 1).
+        Number of workers where to run the process.
+    """
+
+    num_workers: int
+
+    def __init__(self, name: str, num_threads: int = 1, num_workers: int = None):
+        super().__init__(name, num_threads=num_threads)
+        if num_workers is None:
+            num_workers = max(1, multiprocessing.cpu_count() // num_threads - 1)
+
+        if ((num_workers >= multiprocessing.cpu_count() // num_threads) and
+                (num_workers > 1)):
+            num_workers = max(1, multiprocessing.cpu_count() // num_threads - 1)
+            warnings.warn(f"Too many workers requested. Limiting them to {num_workers}")
+        self.num_workers = num_workers
 
     def run(self, cmd_list: List[str]) -> List[str]:
         """See `AbstractRunner.run'."""
@@ -137,7 +181,7 @@ class SingleRunner(AbstractRunner):
                 if not pool[i].is_alive():
                     pool[i].terminate()
                     if len(tasks) > 0:
-                        time.sleep(1) 
+                        time.sleep(1)
                         cmd = tasks.pop(0)
                         pool[i] = start_process(lambda x: os.system(x), (cmd,))
                     else:
@@ -146,5 +190,5 @@ class SingleRunner(AbstractRunner):
         return cmd_list
 
     def run_batch(self, cmd_list: List[str]) -> str:
-        """Run batch."""
+        """See `AbstractRunner.run_batch'."""
         return ''.join(self.run(cmd_list))
