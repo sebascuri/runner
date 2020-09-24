@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
     
 setup(
     name="lsf-runner",
-    version="0.0.5",
+    version="1.0.0",
     author="Sebastian Curi",
     author_email="sebascuri@gmail.com",
     description="A package to run experiments on lsf or linux clusters.",
@@ -22,14 +22,20 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.6',
-    install_requires=[],
+    install_requires=[
+        'paramiko>=2.7.2',
+        'psutil>=5.7.0',
+        'scp>=0.13.2'
+    ],
     extras_require={
         'test': [
-            'pytest>=5.0,<5.1',
-            'flake8>=3.7.8,<3.8',
-            'pydocstyle==4.0.0',
-            'pytest_cov>=2.7,<3',
-            'mypy>=0.740',
+            "pytest>=5.0,<5.1",
+            "flake8>=3.7.8,<3.8",
+            "pydocstyle==4.0.0",
+            "black>=19.10b0",
+            "isort>=5.0.0",
+            "pytest_cov>=2.7,<3",
+            "mypy==0.750",
         ],
     },
 )
